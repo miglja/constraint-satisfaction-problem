@@ -1,5 +1,7 @@
 #! /usr/bin/env python3
 
+# code taken from David Kopec's "Classic Computer Science Problems in Python"
+
 from typing import Generic, TypeVar, Dict, List, Optional
 from abc import ABC, abstractmethod
 
