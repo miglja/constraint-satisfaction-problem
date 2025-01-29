@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
-# code taken from David Kopec's "Classic Computer Science Problems in Python"
+# code adapted from word search in David Kopec's "Classic Computer Science 
+# Problems in Python"
 
 from typing import NamedTuple, List, Dict, Optional
 from random import choice
@@ -11,6 +12,7 @@ from csp import CSP, Constraint
 Grid = List[List[str]]  # type alias for grids
 
 class GridLocation(NamedTuple): 
+    contents: str
     row: int
     column: int
 
@@ -24,6 +26,7 @@ def display_grid(grid: Grid) -> None:
 
 def generate_domain(word: str, grid: Grid) -> List[List[GridLocation]]:
     domain: List[List[GridLocation]] = []
+    entry = []
     height: int = len(grid)
     width: int = len(grid[0])
     length: int = len(word)
@@ -34,18 +37,33 @@ def generate_domain(word: str, grid: Grid) -> List[List[GridLocation]]:
             rows: range = range(row, row + length)
             if col + length <= width:
                 # left to right
-                domain.append([GridLocation(row, c) for c in columns])
+                entry = []
+                for i, c in enumerate(columns):
+                    entry.append(GridLocation(word[i], row, c))
+                domain.append(entry)
+                #domain.append([GridLocation(row, c) for c in columns])
                 # diagonal towards bottom right
                 if row + length <= height:
-                    domain.append([GridLocation(r, col + (r-row)) for r in rows])
+                    entry = []
+                    for i, r in enumerate(rows):
+                        entry.append(GridLocation(word[i], r, col+(r-row)))
+                    domain.append(entry)
+                    #domain.append([GridLocation(r, col + (r-row)) for r in rows])
 
             if row + length <= height:
                 # top to bottom
-                domain.append([GridLocation(r, col) for r in rows])
+                entry = []
+                for i, r in enumerate(rows):
+                    entry.append(GridLocation(word[i], r, col))
+                domain.append(entry)
+                # domain.append([GridLocation(r, col) for r in rows])
                 # diagonal towards bottom left
                 if col - length >= 0:
-                    domain.append([GridLocation(r, col - (r-row)) for r in rows])
-              
+                    entry = []
+                    for i, r in enumerate(rows):
+                        entry.append(GridLocation(word[i], r, col-(r-row)))
+                    domain.append(entry)
+                    # domain.append([GridLocation(r, col - (r-row)) for r in rows])
     return domain
 
 class WordSearchConstraint(Constraint[str, List[GridLocation]]):
@@ -55,16 +73,27 @@ class WordSearchConstraint(Constraint[str, List[GridLocation]]):
 
     def satisfied(self, assignment: Dict[str, List[GridLocation]]) -> bool:
         # if there are any duplicate grid locations, then there is an overlap
-        all_locations = [locs for values in assignment.values() for locs in values]
-        return len(set(all_locations)) == len(all_locations)
+        all_locations = []
+        for values in assignment.values():
+            for locs in values:
+                all_locations.append(locs)
+        # all_locations = [locs for values in assignment.values() for locs in values]
+        for (position, location) in enumerate(all_locations):
+            for match in all_locations[(position+1):]:
+                if location.row == match.row and location.column == match.column and location.contents != match.contents:
+                    return False
+        return True
 
 def main():
     grid: Grid = generate_grid(9,9)
-    words: List[str] = ["MATTHEW", "JOE", "MARY", "SARAH", "SALLY"]
+    data: List[str] = ["MATTHEW", "JOE", "MARY", "SARAH", "SALLY"]
+    # data: List[str] = ["matthew", "joe", "mary", "sarah", "sally"]
+    words: List[str] = list(map(lambda word: word if choice([True, False]) else word[::-1], data))
     """
     grid: Grid = generate_grid(2,2)
-    words: List[str] = ["bo", "ma"]
+    words: List[str] = ["bo", "ma", "bm"]
     """
+
     locations: Dict[str, List[List[GridLocation]]] = {}
 
     for word in words:
@@ -78,8 +107,8 @@ def main():
     else:
         for word, grid_locations in solution.items():
             # random reverse half the time
-            if choice([True, False]):
-                grid_locations.reverse()
+            # if choice([True, False]):
+            #    grid_locations.reverse()
 
             for index, letter in enumerate(word):
                 (row, col) = (grid_locations[index].row, grid_locations[index].column)
